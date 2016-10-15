@@ -225,6 +225,7 @@ class DynamicTable {
         size = 0
     }
 
+    @discardableResult
     func remove() -> HeaderField? {
         guard let removed = headerFields[tail] else {
             return nil

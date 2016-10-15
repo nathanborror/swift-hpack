@@ -129,6 +129,7 @@ public class Encoder {
         size = 0
     }
 
+    @discardableResult
     func remove() -> HeaderField? {
         if size == 0 {
             return nil
