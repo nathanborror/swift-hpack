@@ -148,7 +148,6 @@ class StaticTable {
 }
 
 class DynamicTable {
-
     var headerFields = [HeaderField?]()
     var head = 0
     var tail = 0

@@ -5,11 +5,11 @@
 
 import Foundation
 
-public class Decoder {
+public class HPACKDecoder {
 
     public enum Exception: Error {
         case decompressionException
-        case illegalIndexValue
+        case illegalIndexValue(Int)
         case invalidMaxDynamicTableSize
         case maxDynamicTableSizeChangeRequested
     }
@@ -52,7 +52,7 @@ public class Decoder {
 
     /// Construct an HPACKDecoder with the given memory constraints.
     public init(maxHeaderSize: Int = 256, maxHeaderTableSize: Int = 256) {
-        self.dynamicTable = DynamicTable(initialCapacity: maxHeaderTableSize)
+        self.dynamicTable = DynamicTable(initialCapacity: maxHeaderTableSize * 8)
         self.maxHeaderSize = maxHeaderSize
         self.maxDynamicTableSize = maxHeaderTableSize
         self.encoderMaxDynamicTableSize = maxHeaderTableSize
@@ -103,7 +103,7 @@ public class Decoder {
         } else if index - StaticTable.length <= dynamicTable.length {
             name = dynamicTable.getEntry(index: index - StaticTable.length).name
         } else {
-            throw Exception.illegalIndexValue
+            throw Exception.illegalIndexValue(index)
         }
     }
 
@@ -115,7 +115,7 @@ public class Decoder {
             let headerField = dynamicTable.getEntry(index: index - StaticTable.length)
             addHeader(headerListener: headerListener, name: headerField.name, value: headerField.value, sensitive: false)
         } else {
-            throw Exception.illegalIndexValue
+            throw Exception.illegalIndexValue(index)
         }
     }
 
@@ -194,7 +194,7 @@ public class Decoder {
                 if (b & 0x80) != 0 { //b < 0 {
                     index = Int(b & 0x7F)
                     if index == 0 {
-                        throw Exception.illegalIndexValue
+                        throw Exception.illegalIndexValue(index)
                     } else if index == 0x7F {
                         state = .readIndexedHeader
                     } else {
@@ -237,7 +237,7 @@ public class Decoder {
                 if maxSize == -1 {
                     return
                 }
-                if maxSize > Encoder.INDEX_MAX - index {
+                if maxSize > HPACKEncoder.INDEX_MAX - index {
                     throw Exception.decompressionException
                 }
                 setDynamicTableSize(dynamicTableSize: index + maxSize)
@@ -248,7 +248,7 @@ public class Decoder {
                 if headerIndex == -1 {
                     return
                 }
-                if headerIndex > Encoder.INDEX_MAX - index {
+                if headerIndex > HPACKEncoder.INDEX_MAX - index {
                     throw Exception.decompressionException
                 }
                 try indexHeader(index: index + headerIndex, headerListener: headerListener)
@@ -259,7 +259,7 @@ public class Decoder {
                 if nameIndex == -1 {
                     return
                 }
-                if nameIndex > Encoder.INDEX_MAX - index {
+                if nameIndex > HPACKEncoder.INDEX_MAX - index {
                     throw Exception.decompressionException
                 }
                 try readName(index: index + nameIndex)
@@ -279,14 +279,14 @@ public class Decoder {
                     }
                     if exceedsMaxHeaderSize(size: nameLength) {
                         if indexType == .None {
-                            name = Decoder.empty
+                            name = HPACKDecoder.empty
                             skipLength = nameLength
                             state = .skipLiteralHeaderName
                             break // check me
                         }
                         if nameLength + HeaderField.headerEntryOverhead > dynamicTable.capacity {
                             dynamicTable.clear()
-                            name = Decoder.empty
+                            name = HPACKDecoder.empty
                             skipLength = nameLength
                             state  = .skipLiteralHeaderName
                             break
@@ -301,20 +301,20 @@ public class Decoder {
                 if nameLength == -1 {
                     return
                 }
-                if nameLength > Encoder.INDEX_MAX - index {
+                if nameLength > HPACKEncoder.INDEX_MAX - index {
                     throw Exception.decompressionException
                 }
                 nameLength += index
                 if exceedsMaxHeaderSize(size: nameLength) {
                     if indexType == .None {
-                        name = Decoder.empty
+                        name = HPACKDecoder.empty
                         skipLength = nameLength
                         state = .skipLiteralHeaderName
                         break // check me
                     }
                     if nameLength + HeaderField.headerEntryOverhead > dynamicTable.capacity {
                         dynamicTable.clear()
-                        name = Decoder.empty
+                        name = HPACKDecoder.empty
                         skipLength = nameLength
                         state  = .skipLiteralHeaderName
                         break
@@ -364,7 +364,7 @@ public class Decoder {
                     }
 
                     if valueLength == 0 {
-                        insertHeader(headerListener: headerListener, name: name!, value: Decoder.empty, indexType: indexType)
+                        insertHeader(headerListener: headerListener, name: name!, value: HPACKDecoder.empty, indexType: indexType)
                         state = .readHeaderRepresentation
                     } else {
                         state = .readLiteralHeaderValue
@@ -377,7 +377,7 @@ public class Decoder {
                 if valueLength == -1 {
                     return
                 }
-                if valueLength > Encoder.INDEX_MAX - index {
+                if valueLength > HPACKEncoder.INDEX_MAX - index {
                     throw Exception.decompressionException
                 }
                 valueLength += index
