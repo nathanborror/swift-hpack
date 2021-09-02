@@ -5,7 +5,7 @@
 
 import Foundation
 
-public class Encoder {
+public class HPACKEncoder {
 
     static let bucketSize = 17
     static let empty = [UInt8]()
@@ -56,7 +56,7 @@ public class Encoder {
         self.capacity = maxCapacity
         self.head.after = self.head
         self.head.before = self.head
-        self.headerFields = [HeaderEntry?](repeating: nil, count: Encoder.bucketSize)
+        self.headerFields = [HeaderEntry?](repeating: nil, count: HPACKEncoder.bucketSize)
     }
 
     /// Encodes a new header field and value, writing the results to out Bytes.
@@ -103,7 +103,7 @@ public class Encoder {
     }
 
     func index(h: Int) -> Int {
-        return h % Encoder.bucketSize
+        return h % HPACKEncoder.bucketSize
     }
 
     func hash(name: [UInt8]) -> Int {
@@ -114,8 +114,8 @@ public class Encoder {
         if h > 0 {
             return h
         }
-        if h == Encoder.INDEX_MIN {
-            return Encoder.INDEX_MAX
+        if h == HPACKEncoder.INDEX_MIN {
+            return HPACKEncoder.INDEX_MAX
         }
         return -h
     }
